@@ -71,6 +71,11 @@ func (s *SqlParseSuite) TestSplitStatements(c *C) {
 			upCount:   2,
 			downCount: 2,
 		},
+		{
+			sql:       gooseSyntax,
+			upCount:   2,
+			downCount: 2,
+		},
 	}
 
 	for _, test := range tests {
@@ -377,3 +382,27 @@ CREATE TABLE post (
 -- +migrate Down
 -- no migration here
 `}
+
+var gooseSyntax = `-- +goose Up
+CREATE TABLE post (
+    id int NOT NULL,
+    title text,
+    body text,
+    PRIMARY KEY(id)
+);
+
+-- +goose Down
+DROP TABLE post;
+
+-- +goose Up
+CREATE TABLE fancier_post (
+    id int NOT NULL,
+    title text,
+    body text,
+    created_on timestamp without time zone,
+    PRIMARY KEY(id)
+);
+
+-- +goose Down
+DROP TABLE fancier_post;
+`

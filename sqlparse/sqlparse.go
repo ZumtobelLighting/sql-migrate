@@ -12,6 +12,7 @@ import (
 
 const (
 	sqlCmdPrefix        = "-- +migrate "
+	oldCmdPrefix        = "-- +goose "
 	optionNoTransaction = "notransaction"
 )
 
@@ -87,13 +88,19 @@ func (c *migrateCommand) HasOption(opt string) bool {
 func parseCommand(line string) (*migrateCommand, error) {
 	cmd := &migrateCommand{}
 
-	if !strings.HasPrefix(line, sqlCmdPrefix) {
+	var fields []string
+	if strings.HasPrefix(line, sqlCmdPrefix) {
+		fields = strings.Fields(line[len(sqlCmdPrefix):])
+		if len(fields) == 0 {
+			return nil, errors.New(`ERROR: incomplete migration command`)
+		}
+	} else if strings.HasPrefix(line, oldCmdPrefix) {
+		fields = strings.Fields(line[len(oldCmdPrefix):])
+		if len(fields) == 0 {
+			return nil, errors.New(`ERROR: incomplete migration command`)
+		}
+	} else {
 		return nil, errors.New("ERROR: not a sql-migrate command")
-	}
-
-	fields := strings.Fields(line[len(sqlCmdPrefix):])
-	if len(fields) == 0 {
-		return nil, errors.New(`ERROR: incomplete migration command`)
 	}
 
 	cmd.Command = fields[0]
@@ -136,7 +143,7 @@ func ParseMigration(r io.ReadSeeker) (*ParsedMigration, error) {
 		}
 
 		// handle any migrate-specific commands
-		if strings.HasPrefix(line, sqlCmdPrefix) {
+		if strings.HasPrefix(line, sqlCmdPrefix) || strings.HasPrefix(line, oldCmdPrefix) {
 			cmd, err := parseCommand(line)
 			if err != nil {
 				return nil, err
